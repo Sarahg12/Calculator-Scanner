@@ -3,10 +3,13 @@ My attempt at implementing an ad-hoc scanner for a calculator language outlined 
 WIP
 ===
 
+Features
+---
++ Support for arbitrarily long lines
++ Small memory footprint -- only keeps single line in memory
+
 TODO
 ---
-+ Add support for comments
 + Create suite of tests
-+ Figure out how to scan multi-line comments without pulling the entire file into memory
 + Add better debug information when a bad token is present (line/col info)
 + Modularize code into different files

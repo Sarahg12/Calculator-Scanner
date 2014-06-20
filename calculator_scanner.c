@@ -6,6 +6,8 @@
 
 #define WTF printf("WTF"); exit(1)
 
+int in_multiline_comment;
+
 typedef enum {
   ASSIGN,
   PLUS,
@@ -75,6 +77,20 @@ void unread_character(char **str) {
 int scan_token(char **buf, Token **token) {
   char c = read_character(buf);
 
+  if (in_multiline_comment) {
+    if (c == '*') {
+      if (read_character(buf) == '/') {
+        in_multiline_comment = false;
+        *token = token_new(COMMENT, "/* ... */", 9); 
+        return 1;
+      } 
+      unread_character(buf);
+    }
+    if (c != '\0') {
+      return scan_token(buf, token); 
+    }
+  }
+
   switch(c) {
     case ':':
       if (read_character(buf) == '=') {
@@ -93,6 +109,20 @@ int scan_token(char **buf, Token **token) {
       *token = token_new(TIMES, "*", 1);
       return 1;
     case '/':
+      c = read_character(buf);
+      if (c == '/') {
+        int len = 2;
+        while ((c = read_character(buf)) && c != '\n' && c != EOF) {
+          len++; 
+        }
+        unread_character(buf);
+        *token = token_new(COMMENT, *buf - len, len);
+        return 1;
+      } else if (c == '*' && !in_multiline_comment) {
+        in_multiline_comment = true;
+        return scan_token(buf, token);
+      }
+      unread_character(buf); 
       *token = token_new(DIV, "/", 1);
       return 1;
     case '(':
@@ -175,6 +205,24 @@ int read_line(FILE *fp, char *buf) {
   return 0;
 }
 
+int get_current_line_length(FILE *fp) {
+  int len = 0;
+  char c;
+  while((c = fgetc(fp)) && c != '\n' && c != EOF) {
+    len++; 
+  }
+
+  // unread the read characters
+  if (c == EOF) {
+    fseek(fp, -len, SEEK_CUR);
+  } else {
+    fseek(fp, -len - 1, SEEK_CUR);
+  }
+
+  // add room for null-delimiter
+  return len + 1;
+}
+
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     printf("Usage: %s file\n", argv[0]);
@@ -188,18 +236,22 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  char *buf = malloc(100);
+  int more_lines = true;
+  while (more_lines) {
+    int line_len = get_current_line_length(fp);
+    char *buf = malloc(line_len);
+    {
+      more_lines = read_line(fp, buf);
 
-  int more_lines;
-  while ((more_lines = read_line(fp, buf))) {
-    Token *token;
-    while (scan_token(&buf, &token)) {
-      if (token->type == INVALID) {
-        printf("Error: bad token\n"); 
-        exit(1);
+      Token *token;
+      while (scan_token(&buf, &token)) {
+        if (token->type == INVALID) {
+          printf("Error: bad token\n"); 
+          exit(1);
+        }
+        print_token(*token); 
       }
-      print_token(*token); 
     }
+    free(buf - line_len);
   }
-  
 }
