@@ -1,0 +1,5 @@
+language: c
+compiler:
+  - clang
+# Change this to your needs
+script: ./configure && make

@@ -1,0 +1,10 @@
+magicNum := 42
+// adding stuff!
+adding := magicNum + (42 - 19)
+
+/* do some crazy
+cool stuff now */
+
+newFile := read filename
+diggy := (43.9 + 42.434) / .000 
+
