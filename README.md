@@ -7,9 +7,8 @@ Features
 ---
 + Support for arbitrarily long lines
 + Small memory footprint -- only keeps single line in memory
++ When unrecognized token encountered, line and column number are printed
 
 TODO
 ---
 + Create suite of tests
-+ Add better debug information when a bad token is present (line/col info)
-+ Modularize code into different files

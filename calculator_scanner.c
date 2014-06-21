@@ -8,6 +8,7 @@
 #include "file_reader.h"
 
 static int scan_token(char **buf, Token *token) {
+  char *starting_buf = *buf;
   static int in_multiline_comment = false;
   char c = read_character(buf);
 
@@ -141,6 +142,7 @@ int main(int argc, char *argv[]) {
     int line_len = get_current_line_length(fp);
     {
       char *buf = malloc(line_len);
+      char *starting_buf = buf;
       more_lines = read_line(fp, buf);
       current_line++;
 
@@ -151,7 +153,7 @@ int main(int argc, char *argv[]) {
           break; 
         } 
         if (token->type == INVALID) {
-          printf("Error: Unrecognized token '%s' in %s:%i\n", token->text, filename, current_line); 
+          printf("Error: Unrecognized token '%s' in %s (row %i, col %i)\n", token->text, filename, current_line, (int)(buf - starting_buf)); 
           exit(1);
         }
         token_print(*token); 
