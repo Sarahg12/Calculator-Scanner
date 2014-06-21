@@ -1,3 +1,4 @@
+![](https://travis-ci.org/StuartHa/Calculator-Scanner.svg?branch=master)
 My attempt at implementing an ad-hoc scanner for a calculator language outlined in Chapter 2 of Programming Language Pragmatics (By Michael Scott)
 
 WIP
