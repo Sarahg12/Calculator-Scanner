@@ -7,7 +7,8 @@
 #include "token.h"
 #include "file_reader.h"
 
-static int scan_token(char **buf, Token *token) {
+// returns a token on the heap, or a null pointer
+Token *scan_string(char **buf) {
   char *starting_buf = *buf;
   static int in_multiline_comment = false;
   char c = read_character(buf);
@@ -16,32 +17,27 @@ static int scan_token(char **buf, Token *token) {
     if (c == '*') {
       if (read_character(buf) == '/') {
         in_multiline_comment = false;
-        token_init(token, COMMENT, "/* ... */", 9); 
-        return 1;
+        return token_new(COMMENT, "/* ... */", 9); 
       } 
       unread_character(buf);
     }
     if (c != '\0') {
-      return scan_token(buf, token); 
+      return scan_string(buf); 
     }
   }
 
   switch(c) {
     case ':':
       if (read_character(buf) == '=') {
-        token_init(token, ASSIGN, ":=", 2);
-        return 1;
+        return token_new(ASSIGN, ":=", 2);
       } 
       unread_character(buf);
     case '+':
-      token_init(token, PLUS, "+", 1);
-      return 1;
+      return token_new(PLUS, "+", 1);
     case '-':
-      token_init(token, MINUS, "-", 1);
-      return 1;
+      return token_new(MINUS, "-", 1);
     case '*':
-      token_init(token, TIMES, "*", 1);
-      return 1;
+      return token_new(TIMES, "*", 1);
     case '/':
       c = read_character(buf);
       if (c == '/') {
@@ -50,28 +46,24 @@ static int scan_token(char **buf, Token *token) {
           len++; 
         }
         unread_character(buf);
-        token_init(token, COMMENT, *buf - len, len);
-        return 1;
+        return token_new(COMMENT, *buf - len, len);
       } else if (c == '*' && !in_multiline_comment) {
         in_multiline_comment = true;
-        return scan_token(buf, token);
+        return scan_string(buf);
       }
       unread_character(buf); 
-      token_init(token, DIV, "/", 1);
-      return 1;
+      return token_new(DIV, "/", 1);
     case '(':
-      token_init(token, LPAREN, "(", 1);
-      return 1;
+      return token_new(LPAREN, "(", 1);
     case ')':
-      token_init(token, RPAREN, ")", 1);
-      return 1;
+      return token_new(RPAREN, ")", 1);
     case ' ':
     case '\t':
     case '\n':
-      return scan_token(buf, token);
+      return scan_string(buf);
     case '\0':
     case EOF:
-      return 0;
+      return NULL;
   }
   // try and parse an identifer or keyword
   if (isalpha(c)) {
@@ -81,8 +73,7 @@ static int scan_token(char **buf, Token *token) {
     for (int i = 0; i < keywords_len; i++) {
       if (strncmp(*buf - 1, keywords[i], strlen(keywords[i])) == 0) {
         *buf += strlen(keywords[i]) - 1; 
-        token_init(token, KEYWORD, keywords[i], strlen(keywords[i]));
-        return 1;
+        return token_new(KEYWORD, keywords[i], strlen(keywords[i]));
       }
     }
 
@@ -93,8 +84,7 @@ static int scan_token(char **buf, Token *token) {
     }
     // unread the character that broke the while loop
     unread_character(buf);
-    token_init(token, IDENTIFIER, *buf - len, len);
-    return 1;
+    return token_new(IDENTIFIER, *buf - len, len);
   }
 
   if (isdigit(c) || c == '.') {
@@ -114,22 +104,14 @@ static int scan_token(char **buf, Token *token) {
     }  
     // unread the character that broke the while loop
     unread_character(buf);
-    token_init(token, NUMBER, *buf - len, len);
-    return 1;
+    return token_new(NUMBER, *buf - len, len);
   }
 
   char debug_str[2] = {c, '\0'};
-  token_init(token, INVALID, debug_str, 1);
-  return 1;
+  return token_new(INVALID, debug_str, 1);
 }
 
-int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    printf("Usage: %s file\n", argv[0]);
-    exit(1);
-  }
-
-  char *filename = argv[1];
+void scan_file(char *filename) {
   FILE *fp = fopen(filename, "r");
   if (!fp) {
     printf("Can't open input file %s!\n", filename);
@@ -147,9 +129,8 @@ int main(int argc, char *argv[]) {
       current_line++;
 
       while (1) {
-        Token *token = token_alloc();
-        int successful_scan = scan_token(&buf, token);
-        if (!successful_scan) {
+        Token *token = scan_string(&buf);
+        if (!token) {
           break; 
         } 
         if (token->type == INVALID) {
@@ -163,3 +144,4 @@ int main(int argc, char *argv[]) {
     }
   }
 }
+

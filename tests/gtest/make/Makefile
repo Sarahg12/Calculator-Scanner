@@ -1,3 +1,7 @@
+# A sample Makefile for building Google Test and using it in user
+# tests.  Please tweak it to suit your environment and project.  You
+# may want to move it to your project's root directory.
+#
 # SYNOPSIS:
 #
 #   make [all]  - makes everything.
@@ -10,18 +14,13 @@
 
 # Points to the root of Google Test, relative to where this file is.
 # Remember to tweak this if you move this file.
-GTEST_DIR = tests/gtest
+GTEST_DIR = ..
 
 # Where to find user code.
-USER_DIR = tests
+USER_DIR = ../..
 
-ROOT_DIR = .
-SRC_DIR = src
-BUILD_DIR = bin
-DATA_DIR = data
-SOURCES=$(wildcard ${SRC_DIR}/*.c)
-TARGET=calculator_scanner
-EXAMPLE_INPUT=example_input.txt
+ROOT_DIR = ${USER_DIR}/..
+SRC_DIR = ${ROOT_DIR}/src
 
 # Flags passed to the preprocessor.
 # Set Google Test's header directory as a system directory, such that
@@ -42,15 +41,12 @@ TESTS = test_unittest
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 
-all: clean build run
+# House-keeping build targets.
 
-build_tests : $(TESTS)
+all : $(TESTS)
 
-clean_tests :
-	rm -f $(addprefix $(USER_DIR)/, $(TESTS) gtest.a gtest_main.a *.o)
-
-run_tests : build_tests
-	./${USER_DIR}/$(TESTS)
+clean :
+	rm -f $(TESTS) gtest.a gtest_main.a *.o
 
 # Builds gtest.a and gtest_main.a.
 
@@ -64,42 +60,32 @@ GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 # compiles fast and for ordinary users its source rarely changes.
 gtest-all.o : $(GTEST_SRCS_)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
-            $(GTEST_DIR)/src/gtest-all.cc -o $(USER_DIR)/$@
+            $(GTEST_DIR)/src/gtest-all.cc
 
 gtest_main.o : $(GTEST_SRCS_)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
-            $(GTEST_DIR)/src/gtest_main.cc -o $(USER_DIR)/$@
+            $(GTEST_DIR)/src/gtest_main.cc
 
 gtest.a : gtest-all.o
-	$(AR) $(ARFLAGS) $(USER_DIR)/$@ $(USER_DIR)/$^
+	$(AR) $(ARFLAGS) $@ $^
 
 gtest_main.a : gtest-all.o gtest_main.o
-	$(AR) $(ARFLAGS) $(USER_DIR)/$@ $(addprefix $(USER_DIR)/,$^)
+	$(AR) $(ARFLAGS) $@ $^
 
-# A test should link with either gtest.a or
+# Builds a sample test.  A test should link with either gtest.a or
 # gtest_main.a, depending on whether it defines its own main()
 # function.
 
 test_helper.o : $(USER_DIR)/test_helper.c $(USER_DIR)/test_helper.h $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_helper.c -o ${USER_DIR}/$@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test_helper.c
 
 test.o : $(USER_DIR)/test.cc \
                      $(USER_DIR)/test_helper.h $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test.cc -o ${USER_DIR}/$@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/test.cc
 
-objects = calculator_scanner.o token.o file_reader.o
-%.o: ${SRC_DIR}/%.c
-	$(CC) -c -o ${USER_DIR}/$@ $^
+objects = $(addprefix $(USER_DIR)/, calculator_scanner.o token.o file_reader.o)
+${USER_DIR}/%.o: ${SRC_DIR}/%.c
+	$(CC) -c -o $@ $^
 
 test_unittest : $(objects) test_helper.o test.o gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $(addprefix $(USER_DIR)/, $^) -o $(USER_DIR)/$@
-
-build: 
-	mkdir bin 2>/dev/null
-	${CC} ${CFLAGS} ${SOURCES} -o ${BUILD_DIR}/${TARGET}
-
-clean: 
-	rm -rf ${BUILD_DIR}
-
-run: 
-	./${BUILD_DIR}/${TARGET} ${DATA_DIR}/${EXAMPLE_INPUT}
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
