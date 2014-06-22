@@ -12,3 +12,4 @@ Features
 TODO
 ---
 + Add better test coverage
++ Integrate preprocessor into compiler pipeline
