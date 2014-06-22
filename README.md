@@ -7,7 +7,7 @@ Features
 + Support for arbitrarily long lines
 + Small memory footprint -- only keeps single line in memory
 + When unrecognized token encountered, line and column number are printed
-+ Unit tests run on pushes via Travis and Google C++ testing framework
++ Unit tests run on pushes via Travis and Google C++ testing framework ![](https://travis-ci.org/StuartHa/Calculator-Scanner)
 
 TODO
 ---
